@@ -35,6 +35,9 @@ function doPost(e) {
     // Set color to Tomato (red) — color ID 11
     event.setColor(CalendarApp.EventColor.TOMATO);
     
+    // Remove all reminders — log to calendar only, no email/popup notifications
+    event.removeAllReminders();
+    
     return ContentService.createTextOutput(
       JSON.stringify({ status: "ok", eventId: event.getId() })
     ).setMimeType(ContentService.MimeType.JSON);
