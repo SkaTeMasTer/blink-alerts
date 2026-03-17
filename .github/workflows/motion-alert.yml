@@ -46,11 +46,19 @@ jobs:
           CAMERA="${CAMERA:-Outdoor 4 - D1QG}"
           
           if [ -n "${APPS_SCRIPT_URL}" ]; then
-            RESULT=$(curl -s -L --post301 --post302 --post303 \
+            # Google Apps Script returns 302 redirect with result URL
+            # Step 1: POST and capture redirect URL
+            REDIRECT=$(curl -s -w "%{redirect_url}" -o /dev/null \
               -H "Content-Type: application/json" \
               -d "{\"camera\": \"${CAMERA}\", \"location\": \"Reimerdes Hill, Brookfield CT\"}" \
               "${APPS_SCRIPT_URL}")
-            echo "Calendar response: ${RESULT}"
+            # Step 2: GET the redirect URL for the response
+            if [ -n "${REDIRECT}" ]; then
+              RESULT=$(curl -s "${REDIRECT}")
+              echo "Calendar response: ${RESULT}"
+            else
+              echo "⚠️ No redirect URL received"
+            fi
             echo "✅ Calendar event request sent"
           else
             echo "⚠️ APPS_SCRIPT_URL not set, skipping calendar"
