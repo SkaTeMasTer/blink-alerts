@@ -46,9 +46,11 @@ jobs:
           CAMERA="${CAMERA:-Outdoor 4 - D1QG}"
           
           if [ -n "${APPS_SCRIPT_URL}" ]; then
-            curl -s -L -X POST "${APPS_SCRIPT_URL}" \
+            RESULT=$(curl -s -L --post301 --post302 --post303 \
               -H "Content-Type: application/json" \
-              -d "{\"camera\": \"${CAMERA}\", \"location\": \"Reimerdes Hill, Brookfield CT\"}"
+              -d "{\"camera\": \"${CAMERA}\", \"location\": \"Reimerdes Hill, Brookfield CT\"}" \
+              "${APPS_SCRIPT_URL}")
+            echo "Calendar response: ${RESULT}"
             echo "✅ Calendar event request sent"
           else
             echo "⚠️ APPS_SCRIPT_URL not set, skipping calendar"
