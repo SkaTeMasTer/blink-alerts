@@ -1,0 +1,55 @@
+name: Blink Motion Alert
+
+on:
+  repository_dispatch:
+    types: [blink-motion]
+
+jobs:
+  alert:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Telegram Alert
+        env:
+          TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
+          TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
+        run: |
+          CAMERA="${{ github.event.client_payload.camera_name }}"
+          TIMESTAMP="${{ github.event.client_payload.created_at }}"
+          
+          CAMERA="${CAMERA:-Outdoor 4 - D1QG}"
+          TIMESTAMP="${TIMESTAMP:-$(date -u '+%Y-%m-%d %H:%M:%S UTC')}"
+          
+          # Convert to EST display
+          EST_TIME=$(TZ='America/New_York' date '+%I:%M %p EST')
+          
+          MSG=$(cat <<EOF
+          🚨📸 *BLINK MOTION DETECTED*
+          
+          📷 Camera: ${CAMERA}
+          🕐 Time: ${EST_TIME}
+          📍 Reimerdes Hill, Brookfield CT
+          
+          _IFTTT → GitHub → Telegram_
+          EOF
+          )
+          
+          curl -s -X POST "https://api.telegram.org/bot${TG_BOT_TOKEN}/sendMessage" \
+            -d chat_id="${TG_CHAT_ID}" \
+            -d text="${MSG}" \
+            -d parse_mode=Markdown
+
+      - name: Create Calendar Event via Google Apps Script
+        env:
+          APPS_SCRIPT_URL: ${{ secrets.APPS_SCRIPT_URL }}
+        run: |
+          CAMERA="${{ github.event.client_payload.camera_name }}"
+          CAMERA="${CAMERA:-Outdoor 4 - D1QG}"
+          
+          if [ -n "${APPS_SCRIPT_URL}" ]; then
+            curl -s -L -X POST "${APPS_SCRIPT_URL}" \
+              -H "Content-Type: application/json" \
+              -d "{\"camera\": \"${CAMERA}\", \"location\": \"Reimerdes Hill, Brookfield CT\"}"
+            echo "✅ Calendar event request sent"
+          else
+            echo "⚠️ APPS_SCRIPT_URL not set, skipping calendar"
+          fi
